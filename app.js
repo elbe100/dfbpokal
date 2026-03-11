@@ -187,20 +187,18 @@ function finishRoundIfComplete() {
 }
 
 function addNextRoundButton() {
-    const container = document.getElementById('matches-container');
-    if (!document.getElementById('next-round-btn')) {
-        const btn = document.createElement('button');
-        btn.id = 'next-round-btn';
-        btn.className = 'btn-primary';
-        btn.textContent = 'Nächste Runde';
-        btn.style.width = '100%';
-        btn.style.gridColumn = '1 / -1';
-        container.appendChild(btn);
-        btn.addEventListener('click', () => {
-            tournament.continueToNextRound();
-            renderMatchesSection();
-        });
-    }
+    if (document.getElementById('next-round-btn')) return;
+    const roundInfo = document.getElementById('match-round-info');
+    const btn = document.createElement('button');
+    btn.id = 'next-round-btn';
+    btn.className = 'btn-primary';
+    btn.textContent = '▶ Nächste Runde';
+    btn.style.margin = '0';
+    roundInfo.querySelector('div').appendChild(btn);
+    btn.addEventListener('click', () => {
+        tournament.continueToNextRound();
+        renderMatchesSection();
+    });
 }
 
 function renderResultsSection() {
