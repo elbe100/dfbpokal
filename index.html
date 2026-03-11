@@ -17,6 +17,7 @@
         <button class="nav-btn" data-section="matches">Spiele</button>
         <button class="nav-btn" data-section="results">Ergebnisse</button>
         <button class="nav-btn" data-section="stats">Statistik</button>
+        <button class="nav-btn" data-section="sieger">🏆 Sieger</button>
     </nav>
 
     <main id="main-content">
@@ -56,6 +57,14 @@
         <section id="stats" class="section">
             <h2>Statistik</h2>
             <div id="stats-container" class="stats-container"></div>
+        </section>
+
+        <!-- Sieger Section -->
+        <section id="sieger" class="section">
+            <h2>🏆 Sieger</h2>
+            <p style="color: #666; margin-bottom: 1.5rem;">Dauerhaft gespeicherte Turniersieger</p>
+            <div id="sieger-container" class="results-container"></div>
+            <button id="clear-sieger-btn" class="btn-small" style="margin-top: 2rem; background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Alle Einträge löschen</button>
         </section>
     </main>
 

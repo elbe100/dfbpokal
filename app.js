@@ -31,6 +31,7 @@ function setupNavigationListeners() {
             if (sectionId === 'matches') renderMatchesSection();
             if (sectionId === 'results') renderResultsSection();
             if (sectionId === 'stats') renderStatsSection();
+            if (sectionId === 'sieger') renderSiegerSection();
         });
     });
 }
@@ -95,6 +96,7 @@ function renderMatchesSection() {
         nextRoundBtn.addEventListener('click', () => {
             const result = tournament.continueToNextRound();
             if (result === 'tournament_finished') {
+                saveTournamentWinner();
                 alert('🏆 Turnier abgeschlossen! ' + tournament.getTournamentWinner().name + ' ist Pokalsieger!');
             }
             renderMatchesSection();
@@ -170,6 +172,7 @@ function addNextRoundButton() {
         btn.addEventListener('click', () => {
             const result = tournament.continueToNextRound();
             if (result === 'tournament_finished') {
+                saveTournamentWinner();
                 alert('🏆 Turnier abgeschlossen! ' + tournament.getTournamentWinner().name + ' ist Pokalsieger!');
                 renderMatchesSection();
             } else {
@@ -285,10 +288,96 @@ function renderStatsSection() {
 function switchToSection(sectionId) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    
+
     const btn = document.querySelector(`[data-section="${sectionId}"]`);
     if (btn) btn.classList.add('active');
-    
+
     const section = document.getElementById(sectionId);
     if (section) section.classList.add('active');
+}
+
+// --- Sieger (Hall of Fame) ---
+
+function saveTournamentWinner() {
+    const winner = tournament.getTournamentWinner();
+    if (!winner) return;
+
+    const finalResult = tournament.results[tournament.results.length - 1];
+    const finalTimestamp = new Date().toISOString();
+
+    const entry = {
+        champion: {
+            name: winner.name,
+            division: winner.division
+        },
+        finalRound: tournament.currentRound,
+        finalTimestamp,
+        rounds: buildRoundSummary()
+    };
+
+    const stored = JSON.parse(localStorage.getItem('dfbpokal_sieger') || '[]');
+    stored.unshift(entry);
+    localStorage.setItem('dfbpokal_sieger', JSON.stringify(stored));
+}
+
+function buildRoundSummary() {
+    const byRound = {};
+    tournament.results.forEach(r => {
+        if (!byRound[r.round]) byRound[r.round] = [];
+        byRound[r.round].push(r.winner.name);
+    });
+    return Object.keys(byRound).sort((a, b) => a - b).map(round => ({
+        round: parseInt(round),
+        winners: byRound[round]
+    }));
+}
+
+function renderSiegerSection() {
+    const container = document.getElementById('sieger-container');
+    const stored = JSON.parse(localStorage.getItem('dfbpokal_sieger') || '[]');
+
+    if (stored.length === 0) {
+        container.innerHTML = '<p style="color: #666;">Noch kein Turnier abgeschlossen. Spiel ein Turnier zu Ende, um den Sieger hier zu sehen.</p>';
+    } else {
+        const roundNames = ['', 'Runde 1', 'Runde 2', 'Achtelfinale', 'Viertelfinale', 'Halbfinale', 'Finale'];
+        container.innerHTML = stored.map((entry, idx) => {
+            const date = new Date(entry.finalTimestamp);
+            const dateStr = date.toLocaleString('de-DE', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            const tournamentNum = stored.length - idx;
+            return `
+                <div class="result-card" style="border-left: 4px solid #ffd700;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <span style="font-weight: bold; color: #888;">Turnier #${tournamentNum}</span>
+                        <span style="font-size: 0.85rem; color: #666;">⏱ Finale: ${dateStr} Uhr</span>
+                    </div>
+                    <div style="text-align: center; padding: 0.75rem; background: linear-gradient(135deg, #fff9c4 0%, #ffd700 100%); border-radius: 8px; margin-bottom: 0.75rem;">
+                        <div style="font-size: 1.5rem;">🏆</div>
+                        <div style="font-size: 1.2rem; font-weight: bold;">${entry.champion.name}</div>
+                        <div style="font-size: 0.85rem; color: #555;">${entry.champion.division}</div>
+                    </div>
+                    <details style="margin-top: 0.5rem;">
+                        <summary style="cursor: pointer; color: #666; font-size: 0.9rem;">Rundenverlauf anzeigen</summary>
+                        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #444;">
+                            ${entry.rounds.map(r => {
+                                const name = roundNames[r.round] || `Runde ${r.round}`;
+                                return `<div style="margin: 0.3rem 0;"><strong>${name}:</strong> ${r.winners.join(', ')}</div>`;
+                            }).join('')}
+                        </div>
+                    </details>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Clear-Button
+    const clearBtn = document.getElementById('clear-sieger-btn');
+    clearBtn.onclick = () => {
+        if (confirm('Alle gespeicherten Sieger löschen?')) {
+            localStorage.removeItem('dfbpokal_sieger');
+            renderSiegerSection();
+        }
+    };
 }
