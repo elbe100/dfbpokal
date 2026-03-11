@@ -32,6 +32,7 @@ function setupNavigationListeners() {
             if (sectionId === 'results') renderResultsSection();
             if (sectionId === 'stats') renderStatsSection();
             if (sectionId === 'sieger') renderSiegerSection();
+            if (sectionId === 'form') renderFormSection();
             if (sectionId === 'settings') renderSettingsSection();
         });
     });
@@ -314,6 +315,137 @@ function switchToSection(sectionId) {
 
     const section = document.getElementById(sectionId);
     if (section) section.classList.add('active');
+}
+
+// --- Team-Form ---
+
+function renderFormSection() {
+    const container = document.getElementById('form-container');
+    const allTeams = getAllTeams();
+    const teams = [...allTeams.pro, ...allTeams.amateur];
+    const stats = getFormStatsByDivision(teams);
+
+    container.innerHTML = `
+        <div class="form-actions-bar">
+            <button id="suggest-form-btn" class="btn-primary">🎲 Vorschlag generieren</button>
+            <button id="reset-form-btn" class="btn-small">↩ Zurücksetzen</button>
+        </div>
+        <div class="form-stats-panel" id="form-stats-panel">
+            ${renderFormStats(stats)}
+        </div>
+        <div class="form-teams-grid" id="form-teams-grid">
+            ${teams.map(t => renderFormTeamCard(t)).join('')}
+        </div>
+    `;
+
+    // Event-Delegation für W/D/L Badges
+    document.getElementById('form-teams-grid').addEventListener('click', e => {
+        const badge = e.target.closest('.form-result-badge');
+        if (!badge) return;
+        const teamName = badge.dataset.team;
+        const idx = parseInt(badge.dataset.idx);
+        const form = getTeamForm(teamName);
+        const cycle = { W: 'D', D: 'L', L: 'W' };
+        form.results[idx] = cycle[form.results[idx]];
+        setTeamResults(teamName, form.results);
+        rerenderFormCard(teamName, teams);
+    });
+
+    // Override-Input
+    document.getElementById('form-teams-grid').addEventListener('change', e => {
+        if (!e.target.classList.contains('form-override-input')) return;
+        const teamName = e.target.dataset.team;
+        const val = e.target.value.trim();
+        setTeamOverride(teamName, val === '' ? null : parseFloat(val));
+        rerenderFormCard(teamName, teams);
+    });
+
+    document.getElementById('suggest-form-btn').addEventListener('click', () => {
+        if (confirm('Formwerte für alle 64 Teams neu vorschlagen (Overrides werden zurückgesetzt)?')) {
+            saveFormData(suggestFormForAll(teams));
+            renderFormSection();
+        }
+    });
+
+    document.getElementById('reset-form-btn').addEventListener('click', () => {
+        if (confirm('Alle Formwerte zurücksetzen?')) {
+            saveFormData({});
+            renderFormSection();
+        }
+    });
+}
+
+function renderFormStats(stats) {
+    const order = ['BL Top 6', 'BL', '2.BL', '3.Liga', '4.Liga'];
+    return order.map(div => {
+        const s = stats[div];
+        if (!s) return '';
+        const sign = v => (v > 0 ? '+' : '') + v.toFixed(1);
+        const avgClass = s.avg > 0.3 ? 'form-factor-positive' : s.avg < -0.3 ? 'form-factor-negative' : 'form-factor-neutral';
+        return `
+            <div class="form-stat-card">
+                <div class="form-stat-division">${div}</div>
+                <div class="form-stat-avg ${avgClass}">Ø ${sign(s.avg)}</div>
+                <div class="form-stat-extremes">
+                    <span title="${s.best.name}">▲ ${sign(s.best.factor)}</span>
+                    <span title="${s.worst.name}">▼ ${sign(s.worst.factor)}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderFormTeamCard(team) {
+    const form = getTeamForm(team.name);
+    const autoFactor = calcFormFactor(form.results);
+    const effective = getEffectiveFormFactor(team.name);
+    const hasOverride = form.override !== null && form.override !== undefined;
+    const safeId = team.name.replace(/[^a-z0-9]/gi, '_');
+
+    const badges = form.results.map((r, idx) => `
+        <span class="form-result-badge form-result-${r.toLowerCase()}"
+              data-team="${team.name}" data-idx="${idx}">${r}</span>
+    `).join('');
+
+    const fClass = v => v > 0.3 ? 'form-factor-positive' : v < -0.3 ? 'form-factor-negative' : 'form-factor-neutral';
+    const sign = v => (v > 0 ? '+' : '') + v.toFixed(1);
+
+    return `
+        <div class="form-team-card" id="form-card-${safeId}">
+            <div class="form-team-header">
+                <span class="form-team-name">${team.name}</span>
+                <span class="form-division-badge">${team.division}</span>
+            </div>
+            <div class="form-results-row">${badges}</div>
+            <div class="form-factor-row">
+                <span class="form-factor-label">Auto-Faktor:</span>
+                <span class="form-factor-value ${fClass(autoFactor)}">${sign(autoFactor)}</span>
+                ${hasOverride ? `<span title="Manuell überschrieben" style="font-size:0.75rem;">✏️</span>` : ''}
+            </div>
+            <div class="form-override-row">
+                <label class="form-override-label">Override (-2 bis +2):
+                    <input type="number" class="form-override-input" data-team="${team.name}"
+                           min="-2" max="2" step="0.1" placeholder="auto"
+                           value="${hasOverride ? form.override : ''}">
+                </label>
+                <span class="form-effective-label">Aktiv: <strong class="${fClass(effective)}">${sign(effective)}</strong></span>
+            </div>
+        </div>
+    `;
+}
+
+function rerenderFormCard(teamName, teams) {
+    const safeId = teamName.replace(/[^a-z0-9]/gi, '_');
+    const el = document.getElementById('form-card-' + safeId);
+    const team = teams.find(t => t.name === teamName);
+    if (el && team) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = renderFormTeamCard(team);
+        el.replaceWith(tmp.firstElementChild);
+    }
+    // Statistiken aktualisieren
+    const statsPanel = document.getElementById('form-stats-panel');
+    if (statsPanel) statsPanel.innerHTML = renderFormStats(getFormStatsByDivision(teams));
 }
 
 // --- Würfel-Einstellungen ---

@@ -18,6 +18,7 @@
         <button class="nav-btn" data-section="results">Ergebnisse</button>
         <button class="nav-btn" data-section="stats">Statistik</button>
         <button class="nav-btn" data-section="sieger">🏆 Sieger</button>
+        <button class="nav-btn" data-section="form">📊 Form</button>
         <button class="nav-btn" data-section="settings">⚙️ Einstellungen</button>
     </nav>
 
@@ -60,6 +61,13 @@
             <div id="stats-container" class="stats-container"></div>
         </section>
 
+        <!-- Form Section -->
+        <section id="form" class="section">
+            <h2>📊 Team-Form</h2>
+            <p style="color:#666; margin-bottom:1.5rem;">Letzte 5 Spiele pro Team (klicken zum Ändern: W→U→N). Der Formfaktor (−2 bis +2) wird als kleiner Bonus auf jeden Würfelwurf addiert.</p>
+            <div id="form-container"></div>
+        </section>
+
         <!-- Settings Section -->
         <section id="settings" class="section">
             <h2>⚙️ Würfel-Einstellungen</h2>
@@ -76,6 +84,7 @@
         </section>
     </main>
 
+    <script src="form.js"></script>
     <script src="settings.js"></script>
     <script src="teams.js"></script>
     <script src="dice.js"></script>
