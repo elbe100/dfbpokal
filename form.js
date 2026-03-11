@@ -135,7 +135,7 @@ function _computeTable(matches) {
 async function loadFormFromAPI(stichtag, onProgress) {
     const season = _detectSeason(stichtag);
     const cutoff = new Date(stichtag);
-    cutoff.setHours(23, 59, 59, 999);
+    cutoff.setUTCHours(23, 59, 59, 999);
 
     // Alle 3 Ligen parallel laden
     onProgress('Lade Spielpaarungen von OpenLigaDB…');
@@ -151,14 +151,20 @@ async function loadFormFromAPI(stichtag, onProgress) {
     fetches.forEach(f => {
         if (f.status === 'fulfilled') {
             const { league, matches } = f.value;
-            leagueMatches[league] = matches.filter(
-                m => m.MatchIsFinished && new Date(m.MatchDateTimeUTC) <= cutoff
-            );
+            leagueMatches[league] = matches.filter(m => {
+                if (!m.MatchIsFinished) return false;
+                const dtStr = m.MatchDateTimeUTC || m.MatchDateTime;
+                if (!dtStr) return false;
+                return new Date(dtStr) <= cutoff;
+            });
         }
     });
 
     const allPlayed = Object.values(leagueMatches).flat();
-    if (!allPlayed.length) throw new Error('Keine abgeschlossenen Spiele vor dem Stichtag gefunden.');
+    if (!allPlayed.length) {
+        const totalFetched = fetches.filter(f => f.status === 'fulfilled').reduce((s, f) => s + f.value.matches.length, 0);
+        throw new Error(`Keine abgeschlossenen Spiele vor dem Stichtag gefunden. (${totalFetched} Spiele geladen, Stichtag: ${cutoff.toISOString()})`);
+    }
 
     // Tabellen berechnen
     const tables = {};
