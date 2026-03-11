@@ -32,6 +32,7 @@ function setupNavigationListeners() {
             if (sectionId === 'results') renderResultsSection();
             if (sectionId === 'stats') renderStatsSection();
             if (sectionId === 'sieger') renderSiegerSection();
+            if (sectionId === 'settings') renderSettingsSection();
         });
     });
 }
@@ -313,6 +314,91 @@ function switchToSection(sectionId) {
 
     const section = document.getElementById(sectionId);
     if (section) section.classList.add('active');
+}
+
+// --- Würfel-Einstellungen ---
+
+function renderSettingsSection() {
+    const container = document.getElementById('settings-container');
+    const current = getDiceSettings();
+
+    const rows = Object.entries(DEFAULT_DICE_SETTINGS).map(([division, defaults]) => {
+        const cur = current[division] || defaults;
+        return `
+            <div class="settings-row">
+                <div class="settings-label">${defaults.label}</div>
+                <div class="settings-inputs">
+                    <label>Min
+                        <input type="number" class="dice-setting-min" data-division="${division}"
+                               value="${cur.min}" min="0" max="99">
+                    </label>
+                    <div class="settings-range-preview" id="preview-${division.replace(/[^a-z0-9]/gi,'_')}">
+                        ${cur.min}–${cur.max}
+                    </div>
+                    <label>Max
+                        <input type="number" class="dice-setting-max" data-division="${division}"
+                               value="${cur.max}" min="0" max="99">
+                    </label>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="settings-form">
+            <div class="settings-header-row">
+                <span>Liga</span>
+                <span style="text-align:center;">Würfelbereich</span>
+            </div>
+            ${rows}
+            <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button id="save-settings-btn" class="btn-primary">💾 Speichern</button>
+                <button id="reset-settings-btn" class="btn-small">↩ Standard</button>
+            </div>
+        </div>
+    `;
+
+    // Live-Vorschau
+    container.querySelectorAll('.dice-setting-min, .dice-setting-max').forEach(input => {
+        input.addEventListener('input', () => {
+            const div = input.dataset.division;
+            const key = div.replace(/[^a-z0-9]/gi, '_');
+            const minEl = container.querySelector(`.dice-setting-min[data-division="${div}"]`);
+            const maxEl = container.querySelector(`.dice-setting-max[data-division="${div}"]`);
+            const preview = document.getElementById('preview-' + key);
+            if (preview) preview.textContent = `${minEl.value}–${maxEl.value}`;
+        });
+    });
+
+    document.getElementById('save-settings-btn').onclick = () => {
+        const newSettings = {};
+        container.querySelectorAll('.dice-setting-min').forEach(minInput => {
+            const div = minInput.dataset.division;
+            const maxInput = container.querySelector(`.dice-setting-max[data-division="${div}"]`);
+            const min = Math.max(0, parseInt(minInput.value) || 0);
+            const max = Math.max(min, parseInt(maxInput.value) || 0);
+            newSettings[div] = { min, max };
+            minInput.value = min;
+            maxInput.value = max;
+        });
+        saveDiceSettings(newSettings);
+        showSaveConfirmation();
+    };
+
+    document.getElementById('reset-settings-btn').onclick = () => {
+        if (confirm('Würfel-Einstellungen auf Standard zurücksetzen?')) {
+            localStorage.removeItem('dfbpokal_dice_settings');
+            renderSettingsSection();
+        }
+    };
+}
+
+function showSaveConfirmation() {
+    const btn = document.getElementById('save-settings-btn');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Gespeichert!';
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500);
 }
 
 // --- Sieger (Hall of Fame) ---

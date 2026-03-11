@@ -6,10 +6,11 @@ class DiceRoller {
     }
 
     roll(team) {
-        // Würfle basierend auf der Division des Teams
-        const max = team.diceMax;
-        const result = Math.floor(Math.random() * (max + 1)); // 0 bis max
-        return result;
+        const settings = getDiceSettings();
+        const s = settings[team.division] || { min: 0, max: team.diceMax };
+        const min = Math.min(s.min, s.max);
+        const max = Math.max(s.min, s.max);
+        return min + Math.floor(Math.random() * (max - min + 1));
     }
 
     rollForMatch(homeTeam, awayTeam) {

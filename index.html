@@ -18,6 +18,7 @@
         <button class="nav-btn" data-section="results">Ergebnisse</button>
         <button class="nav-btn" data-section="stats">Statistik</button>
         <button class="nav-btn" data-section="sieger">🏆 Sieger</button>
+        <button class="nav-btn" data-section="settings">⚙️ Einstellungen</button>
     </nav>
 
     <main id="main-content">
@@ -59,6 +60,13 @@
             <div id="stats-container" class="stats-container"></div>
         </section>
 
+        <!-- Settings Section -->
+        <section id="settings" class="section">
+            <h2>⚙️ Würfel-Einstellungen</h2>
+            <p style="color: #666; margin-bottom: 1.5rem;">Lege für jede Liga den Würfelbereich (Min–Max) fest. Änderungen gelten ab dem nächsten Spiel.</p>
+            <div id="settings-container"></div>
+        </section>
+
         <!-- Sieger Section -->
         <section id="sieger" class="section">
             <h2>🏆 Sieger</h2>
@@ -68,6 +76,7 @@
         </section>
     </main>
 
+    <script src="settings.js"></script>
     <script src="teams.js"></script>
     <script src="dice.js"></script>
     <script src="tournament.js"></script>
