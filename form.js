@@ -8,6 +8,10 @@ const FORM_BASELINES = {
     '4.Liga':   { wProb: 0.28, dProb: 0.32 }
 };
 
+const LEAGUE_SIZES = {
+    'BL Top 6': 18, 'BL': 18, '2.BL': 18, '3.Liga': 20, '4.Liga': 18
+};
+
 function loadFormData() {
     const stored = localStorage.getItem('dfbpokal_form');
     return stored ? JSON.parse(stored) : {};
@@ -36,6 +40,13 @@ function setTeamOverride(teamName, value) {
     saveFormData(data);
 }
 
+function setTeamTablePosOverride(teamName, pos) {
+    const data = loadFormData();
+    if (!data[teamName]) data[teamName] = { results: ['D','D','D','D','D'], override: null };
+    data[teamName].tablePosOverride = (pos !== null && pos !== '') ? Math.max(1, Math.min(20, Number(pos))) : null;
+    saveFormData(data);
+}
+
 function calcFormFactor(results) {
     const pts = results.reduce((s, r) => s + (r === 'W' ? 3 : r === 'D' ? 1 : 0), 0);
     // Normalize: 0–15 pts → -2 to +2
@@ -48,6 +59,18 @@ function getEffectiveFormFactor(teamName) {
         return Number(entry.override);
     }
     return calcFormFactor(entry.results);
+}
+
+function calcTableFactor(pos, division) {
+    const size = LEAGUE_SIZES[division] || 18;
+    return parseFloat(((size - pos) / (size - 1) * 2 - 1).toFixed(1));
+}
+
+function getEffectiveTableFactor(teamName, division) {
+    const entry = getTeamForm(teamName);
+    const pos = (entry.tablePosOverride != null) ? entry.tablePosOverride : entry.tablePos;
+    if (pos == null) return 0;
+    return calcTableFactor(pos, division);
 }
 
 function suggestFormForTeam(team) {

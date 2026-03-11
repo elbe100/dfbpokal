@@ -362,13 +362,17 @@ function renderFormSection() {
         rerenderFormCard(teamName, teams);
     });
 
-    // Override-Input
+    // Override-Inputs (Form-Faktor und Tabellenplatz)
     document.getElementById('form-teams-grid').addEventListener('change', e => {
-        if (!e.target.classList.contains('form-override-input')) return;
         const teamName = e.target.dataset.team;
         const val = e.target.value.trim();
-        setTeamOverride(teamName, val === '' ? null : parseFloat(val));
-        rerenderFormCard(teamName, teams);
+        if (e.target.classList.contains('form-override-input')) {
+            setTeamOverride(teamName, val === '' ? null : parseFloat(val));
+            rerenderFormCard(teamName, teams);
+        } else if (e.target.classList.contains('form-tablepos-input')) {
+            setTeamTablePosOverride(teamName, val === '' ? null : parseInt(val));
+            rerenderFormCard(teamName, teams);
+        }
     });
 
     document.getElementById('suggest-form-btn').addEventListener('click', () => {
@@ -451,15 +455,19 @@ function renderFormTeamCard(team) {
     const fClass = v => v > 0.3 ? 'form-factor-positive' : v < -0.3 ? 'form-factor-negative' : 'form-factor-neutral';
     const sign = v => (v > 0 ? '+' : '') + v.toFixed(1);
 
+    // Tabellenplatz: Override > API
     const hasApiData = !!form.apiDate;
-    const tableInfo = (hasApiData && form.tablePos)
-        ? `<div class="form-table-row">
-               <span class="form-table-pos">#${form.tablePos}</span>
-               <span class="form-table-pts">${form.tablePts} Pkt</span>
-               <span class="form-table-played">${form.tablePlayed} Sp.</span>
-               <span class="form-api-badge" title="Daten vom ${form.apiDate}">API ${form.apiDate}</span>
-           </div>`
-        : (hasApiData ? `<div class="form-table-row"><span class="form-api-badge form-api-nomatch" title="Kein API-Treffer">kein API-Treffer</span></div>` : '');
+    const hasPosOverride = form.tablePosOverride != null;
+    const displayPos = hasPosOverride ? form.tablePosOverride : (form.tablePos || '');
+    const tableFactor = getEffectiveTableFactor(team.name, team.division);
+    const totalBonus = parseFloat((effective + tableFactor).toFixed(1));
+
+    const apiLabel = hasApiData
+        ? `<span class="form-api-badge" title="Daten vom ${form.apiDate}">API ${form.apiDate}</span>`
+        : '';
+    const noMatchLabel = (hasApiData && !form.tablePos && !hasPosOverride)
+        ? `<span class="form-api-badge form-api-nomatch">kein Treffer</span>`
+        : '';
 
     return `
         <div class="form-team-card" id="form-card-${safeId}">
@@ -468,14 +476,28 @@ function renderFormTeamCard(team) {
                 <span class="form-division-badge">${team.division}</span>
             </div>
             <div class="form-results-row">${badges}</div>
-            ${tableInfo}
+            <div class="form-table-row">
+                <label class="form-table-edit-label">Platz:
+                    <input type="number" class="form-tablepos-input" data-team="${team.name}"
+                           min="1" max="20" step="1" placeholder="–"
+                           value="${displayPos}"
+                           title="Tabellenplatz (1=Erster)">
+                </label>
+                ${form.tablePts != null ? `<span class="form-table-pts">${form.tablePts} Pkt</span>` : ''}
+                ${form.tablePlayed != null ? `<span class="form-table-played">${form.tablePlayed} Sp.</span>` : ''}
+                <span class="form-factor-value ${fClass(tableFactor)}" title="Tabellenfaktor">${sign(tableFactor)}</span>
+                ${hasPosOverride ? `<span title="Manuell" style="font-size:0.75rem;">✏️</span>` : apiLabel}
+                ${noMatchLabel}
+            </div>
             <div class="form-factor-row">
-                <span class="form-factor-label">Auto-Faktor:</span>
+                <span class="form-factor-label">Form:</span>
                 <span class="form-factor-value ${fClass(autoFactor)}">${sign(autoFactor)}</span>
                 ${hasOverride ? `<span title="Manuell überschrieben" style="font-size:0.75rem;">✏️</span>` : ''}
+                <span class="form-factor-label" style="margin-left:0.5rem;">Gesamt:</span>
+                <span class="form-factor-value ${fClass(totalBonus)}" title="Form + Tabelle"><strong>${sign(totalBonus)}</strong></span>
             </div>
             <div class="form-override-row">
-                <label class="form-override-label">Override:
+                <label class="form-override-label">Form-Override:
                     <input type="number" class="form-override-input" data-team="${team.name}"
                            min="-2" max="2" step="0.1" placeholder="auto"
                            value="${hasOverride ? form.override : ''}">

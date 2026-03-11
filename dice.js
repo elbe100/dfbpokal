@@ -12,7 +12,8 @@ class DiceRoller {
         const max = Math.max(s.min, s.max);
         const raw = min + Math.floor(Math.random() * (max - min + 1));
         const formBonus = getEffectiveFormFactor(team.name);
-        return Math.max(min, Math.min(max, Math.round(raw + formBonus)));
+        const tableBonus = getEffectiveTableFactor(team.name, team.division);
+        return Math.max(min, Math.min(max, Math.round(raw + formBonus + tableBonus)));
     }
 
     rollForMatch(homeTeam, awayTeam) {

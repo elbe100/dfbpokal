@@ -401,6 +401,23 @@ h3, h4 {
     text-align: center;
 }
 
+.form-table-edit-label {
+    font-size: 0.72rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.form-tablepos-input {
+    width: 42px;
+    padding: 0.1rem 0.25rem;
+    font-size: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    text-align: center;
+}
+
 .form-table-pts, .form-table-played {
     font-size: 0.75rem;
     color: #444;
