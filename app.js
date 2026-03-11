@@ -72,10 +72,16 @@ function renderMatchesSection() {
 
     const playedMatches = tournament.matches.filter(m => m.result !== null).length;
     const totalMatches = tournament.matches.length;
-    
+    const allDone = playedMatches === totalMatches;
+
     roundInfo.innerHTML = `
-        <h3>Runde ${tournament.currentRound}</h3>
-        <p>Gespielt: ${playedMatches}/${totalMatches}</p>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <h3 style="margin: 0;">Runde ${tournament.currentRound}</h3>
+                <p style="margin: 0.25rem 0 0;">Gespielt: ${playedMatches}/${totalMatches}</p>
+            </div>
+            ${!allDone ? `<button id="roll-all-btn" class="btn-primary">🎲 Alle würfeln</button>` : ''}
+        </div>
     `;
 
     container.innerHTML = tournament.matches
@@ -90,15 +96,17 @@ function renderMatchesSection() {
         });
     });
 
+    // Event Listener für "Alle würfeln"
+    const rollAllBtn = document.getElementById('roll-all-btn');
+    if (rollAllBtn) {
+        rollAllBtn.addEventListener('click', () => playAllMatches());
+    }
+
     // Event Listener für Next Round Button
     const nextRoundBtn = document.getElementById('next-round-btn');
     if (nextRoundBtn) {
         nextRoundBtn.addEventListener('click', () => {
-            const result = tournament.continueToNextRound();
-            if (result === 'tournament_finished') {
-                saveTournamentWinner();
-                alert('🏆 Turnier abgeschlossen! ' + tournament.getTournamentWinner().name + ' ist Pokalsieger!');
-            }
+            tournament.continueToNextRound();
             renderMatchesSection();
         });
     }
@@ -149,13 +157,32 @@ function renderMatchCard(match) {
 }
 
 function playMatch(matchId) {
-    const match = tournament.playMatch(matchId);
-    renderMatchesSection();
+    tournament.playMatch(matchId);
+    finishRoundIfComplete();
+}
 
-    // Prüfe ob alle Spiele gespielt sind
+function playAllMatches() {
+    tournament.matches
+        .filter(m => m.result === null)
+        .forEach(m => tournament.playMatch(m.id));
+    finishRoundIfComplete();
+}
+
+function finishRoundIfComplete() {
     const allPlayed = tournament.matches.every(m => m.result !== null);
     if (allPlayed && tournament.currentRound > 0) {
-        addNextRoundButton();
+        const winners = tournament.getWinnersOfRound();
+        if (winners.length === 1) {
+            // Finale abgeschlossen – sofort speichern
+            saveTournamentWinner();
+            renderMatchesSection();
+            alert('🏆 Turnier abgeschlossen! ' + tournament.getTournamentWinner().name + ' ist Pokalsieger!');
+        } else {
+            renderMatchesSection();
+            addNextRoundButton();
+        }
+    } else {
+        renderMatchesSection();
     }
 }
 
@@ -170,14 +197,8 @@ function addNextRoundButton() {
         btn.style.gridColumn = '1 / -1';
         container.appendChild(btn);
         btn.addEventListener('click', () => {
-            const result = tournament.continueToNextRound();
-            if (result === 'tournament_finished') {
-                saveTournamentWinner();
-                alert('🏆 Turnier abgeschlossen! ' + tournament.getTournamentWinner().name + ' ist Pokalsieger!');
-                renderMatchesSection();
-            } else {
-                renderMatchesSection();
-            }
+            tournament.continueToNextRound();
+            renderMatchesSection();
         });
     }
 }
