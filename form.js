@@ -152,7 +152,8 @@ async function loadFormFromAPI(stichtag, onProgress) {
         if (f.status === 'fulfilled') {
             const { league, matches } = f.value;
             leagueMatches[league] = matches.filter(m => {
-                if (!m.MatchIsFinished) return false;
+                const finished = m.MatchIsFinished || (m.MatchResults && m.MatchResults.length > 0);
+                if (!finished) return false;
                 const dtStr = m.MatchDateTimeUTC || m.MatchDateTime;
                 if (!dtStr) return false;
                 return new Date(dtStr) <= cutoff;
