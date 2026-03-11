@@ -72,6 +72,145 @@ function suggestFormForAll(allTeams) {
     return data;
 }
 
+// ── OpenLigaDB API ────────────────────────────────────────────────────────────
+
+const OPENLIGADB_LEAGUES = ['bl1', 'bl2', 'bl3'];
+
+// Normalisiert einen Teamnamen für fuzzy-Matching
+function _normName(n) {
+    return n.toLowerCase()
+        .replace(/^(fc |sv |1\. fc |1\. fsv |sc |rb |vfb |vfl |sg |ssv |dsv |bv |tsg |bayer 04 |borussia |dynamo |rot-weiss |rot-weiß |energie |eintracht |fortuna |hansa |arminia |preußen |stuttgarter )/g, '')
+        .replace(/ü/g,'u').replace(/ä/g,'a').replace(/ö/g,'o').replace(/ß/g,'ss')
+        .replace(/\s*(1846|98|07|05|04|03|02|01)\s*$/g, '')
+        .trim();
+}
+
+function _namesMatch(a, b) {
+    const na = _normName(a), nb = _normName(b);
+    return na === nb || na.startsWith(nb) || nb.startsWith(na) ||
+           na.includes(nb.slice(0, 6)) || nb.includes(na.slice(0, 6));
+}
+
+function _getFinalScore(match) {
+    const results = match.MatchResults || [];
+    if (!results.length) return null;
+    const final = results.reduce((a, b) => a.ResultOrderID > b.ResultOrderID ? a : b);
+    return { home: final.PointsTeam1, away: final.PointsTeam2 };
+}
+
+function _resultForTeam(teamName, match) {
+    const score = _getFinalScore(match);
+    if (!score) return null;
+    const isHome = _namesMatch(teamName, match.Team1.TeamName);
+    const isAway = !isHome && _namesMatch(teamName, match.Team2.TeamName);
+    if (!isHome && !isAway) return null;
+    const mine = isHome ? score.home : score.away;
+    const opp  = isHome ? score.away : score.home;
+    return mine > opp ? 'W' : mine < opp ? 'L' : 'D';
+}
+
+function _detectSeason(stichtag) {
+    const d = new Date(stichtag);
+    return d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
+}
+
+function _computeTable(matches) {
+    const t = {};
+    matches.forEach(m => {
+        const score = _getFinalScore(m);
+        if (!score) return;
+        const n1 = m.Team1.TeamName, n2 = m.Team2.TeamName;
+        if (!t[n1]) t[n1] = { name: n1, pts: 0, gd: 0, played: 0 };
+        if (!t[n2]) t[n2] = { name: n2, pts: 0, gd: 0, played: 0 };
+        t[n1].played++; t[n2].played++;
+        t[n1].gd += score.home - score.away;
+        t[n2].gd += score.away - score.home;
+        if (score.home > score.away)       { t[n1].pts += 3; }
+        else if (score.home < score.away)  { t[n2].pts += 3; }
+        else                               { t[n1].pts++;  t[n2].pts++; }
+    });
+    return Object.values(t).sort((a, b) => b.pts - a.pts || b.gd - a.gd);
+}
+
+async function loadFormFromAPI(stichtag, onProgress) {
+    const season = _detectSeason(stichtag);
+    const cutoff = new Date(stichtag);
+    cutoff.setHours(23, 59, 59, 999);
+
+    // Alle 3 Ligen parallel laden
+    onProgress('Lade Spielpaarungen von OpenLigaDB…');
+    const fetches = await Promise.allSettled(
+        OPENLIGADB_LEAGUES.map(l =>
+            fetch(`https://api.openligadb.de/getmatchdata/${l}/${season}`)
+                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(data => ({ league: l, matches: data }))
+        )
+    );
+
+    const leagueMatches = {};   // { bl1: [...], bl2: [...], bl3: [...] }
+    fetches.forEach(f => {
+        if (f.status === 'fulfilled') {
+            const { league, matches } = f.value;
+            leagueMatches[league] = matches.filter(
+                m => m.MatchIsFinished && new Date(m.MatchDateTimeUTC) <= cutoff
+            );
+        }
+    });
+
+    const allPlayed = Object.values(leagueMatches).flat();
+    if (!allPlayed.length) throw new Error('Keine abgeschlossenen Spiele vor dem Stichtag gefunden.');
+
+    // Tabellen berechnen
+    const tables = {};
+    Object.entries(leagueMatches).forEach(([l, ms]) => {
+        tables[l] = _computeTable(ms);
+    });
+
+    const teams = getAllTeams();
+    const allTeams = [...teams.pro, ...teams.amateur];
+    const formData = loadFormData();
+    let matched = 0;
+
+    allTeams.forEach(team => {
+        // Suche in allen Ligen nach Spielen dieses Teams
+        let teamMatches = allPlayed
+            .filter(m => _namesMatch(team.name, m.Team1.TeamName) || _namesMatch(team.name, m.Team2.TeamName))
+            .sort((a, b) => new Date(a.MatchDateTimeUTC) - new Date(b.MatchDateTimeUTC));
+
+        if (!teamMatches.length) return;
+        matched++;
+
+        const last5 = teamMatches.slice(-5);
+        const results = last5.map(m => _resultForTeam(team.name, m)).filter(Boolean);
+        while (results.length < 5) results.unshift('D');
+
+        // Tabellenposition ermitteln
+        let tablePos = null, tablePts = null, tablePlayed = null;
+        for (const [, table] of Object.entries(tables)) {
+            const entry = table.find(r => _namesMatch(team.name, r.name));
+            if (entry) {
+                tablePos    = table.indexOf(entry) + 1;
+                tablePts    = entry.pts;
+                tablePlayed = entry.played;
+                break;
+            }
+        }
+
+        if (!formData[team.name]) formData[team.name] = { override: null };
+        formData[team.name].results    = results.slice(-5);
+        formData[team.name].override   = null;
+        formData[team.name].apiDate    = stichtag;
+        formData[team.name].tablePos   = tablePos;
+        formData[team.name].tablePts   = tablePts;
+        formData[team.name].tablePlayed = tablePlayed;
+    });
+
+    onProgress(`✅ ${matched} von ${allTeams.length} Teams geladen (Saison ${season}/${season+1})`);
+    return { formData, matched, total: allTeams.length };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function getFormStatsByDivision(allTeams) {
     const stats = {};
     allTeams.forEach(team => {

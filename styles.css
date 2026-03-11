@@ -339,6 +339,92 @@ h3, h4 {
     opacity: 0.9;
 }
 
+/* Form API Bar */
+.form-api-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    background: #e8f0fe;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border-left: 4px solid #0052cc;
+}
+
+.form-api-label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #003da5;
+    gap: 0.2rem;
+}
+
+.form-api-label input[type="date"] {
+    padding: 0.35rem 0.5rem;
+    border: 2px solid #0052cc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #003da5;
+    background: white;
+    cursor: pointer;
+}
+
+.form-api-status {
+    font-size: 0.82rem;
+    color: #555;
+    flex: 1;
+    min-width: 150px;
+}
+
+.form-api-status.form-api-ok  { color: #2e7d32; font-weight: 600; }
+.form-api-status.form-api-err { color: #c62828; font-weight: 600; }
+
+/* API Table row in team card */
+.form-table-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.form-table-pos {
+    font-weight: 700;
+    font-size: 0.8rem;
+    background: #003da5;
+    color: white;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    min-width: 26px;
+    text-align: center;
+}
+
+.form-table-pts, .form-table-played {
+    font-size: 0.75rem;
+    color: #444;
+    background: #f0f0f0;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+}
+
+.form-api-badge {
+    font-size: 0.65rem;
+    color: #0052cc;
+    background: #e8f0fe;
+    border: 1px solid #c5d8f6;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    margin-left: auto;
+}
+
+.form-api-nomatch {
+    color: #888;
+    background: #f5f5f5;
+    border-color: #ddd;
+}
+
 /* Form Section */
 .form-actions-bar {
     display: flex;

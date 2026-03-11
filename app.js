@@ -325,9 +325,20 @@ function renderFormSection() {
     const teams = [...allTeams.pro, ...allTeams.amateur];
     const stats = getFormStatsByDivision(teams);
 
+    // Standard-Stichtag: heute
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const savedDate = localStorage.getItem('dfbpokal_stichtag') || todayStr;
+
     container.innerHTML = `
+        <div class="form-api-bar">
+            <label class="form-api-label">Stichtag
+                <input type="date" id="stichtag-input" value="${savedDate}" max="${todayStr}">
+            </label>
+            <button id="load-api-btn" class="btn-primary">🌐 Daten laden</button>
+            <span id="api-status" class="form-api-status"></span>
+        </div>
         <div class="form-actions-bar">
-            <button id="suggest-form-btn" class="btn-primary">🎲 Vorschlag generieren</button>
+            <button id="suggest-form-btn" class="btn-small">🎲 Zufalls-Vorschlag</button>
             <button id="reset-form-btn" class="btn-small">↩ Zurücksetzen</button>
         </div>
         <div class="form-stats-panel" id="form-stats-panel">
@@ -361,7 +372,7 @@ function renderFormSection() {
     });
 
     document.getElementById('suggest-form-btn').addEventListener('click', () => {
-        if (confirm('Formwerte für alle 64 Teams neu vorschlagen (Overrides werden zurückgesetzt)?')) {
+        if (confirm('Zufällige Formwerte für alle 64 Teams generieren (Overrides werden zurückgesetzt)?')) {
             saveFormData(suggestFormForAll(teams));
             renderFormSection();
         }
@@ -371,6 +382,36 @@ function renderFormSection() {
         if (confirm('Alle Formwerte zurücksetzen?')) {
             saveFormData({});
             renderFormSection();
+        }
+    });
+
+    // API-Laden
+    document.getElementById('load-api-btn').addEventListener('click', async () => {
+        const stichtag = document.getElementById('stichtag-input').value;
+        if (!stichtag) return;
+        localStorage.setItem('dfbpokal_stichtag', stichtag);
+
+        const btn = document.getElementById('load-api-btn');
+        const status = document.getElementById('api-status');
+        btn.disabled = true;
+        btn.textContent = '⏳ Lädt…';
+        status.textContent = '';
+        status.className = 'form-api-status';
+
+        try {
+            const { formData, matched, total } = await loadFormFromAPI(stichtag, msg => {
+                status.textContent = msg;
+            });
+            saveFormData(formData);
+            status.textContent = `✅ ${matched}/${total} Teams • Saison aus Stichtag ${stichtag}`;
+            status.classList.add('form-api-ok');
+            renderFormSection();
+        } catch (err) {
+            status.textContent = '❌ ' + err.message;
+            status.classList.add('form-api-err');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🌐 Daten laden';
         }
     });
 }
@@ -410,6 +451,16 @@ function renderFormTeamCard(team) {
     const fClass = v => v > 0.3 ? 'form-factor-positive' : v < -0.3 ? 'form-factor-negative' : 'form-factor-neutral';
     const sign = v => (v > 0 ? '+' : '') + v.toFixed(1);
 
+    const hasApiData = !!form.apiDate;
+    const tableInfo = (hasApiData && form.tablePos)
+        ? `<div class="form-table-row">
+               <span class="form-table-pos">#${form.tablePos}</span>
+               <span class="form-table-pts">${form.tablePts} Pkt</span>
+               <span class="form-table-played">${form.tablePlayed} Sp.</span>
+               <span class="form-api-badge" title="Daten vom ${form.apiDate}">API ${form.apiDate}</span>
+           </div>`
+        : (hasApiData ? `<div class="form-table-row"><span class="form-api-badge form-api-nomatch" title="Kein API-Treffer">kein API-Treffer</span></div>` : '');
+
     return `
         <div class="form-team-card" id="form-card-${safeId}">
             <div class="form-team-header">
@@ -417,13 +468,14 @@ function renderFormTeamCard(team) {
                 <span class="form-division-badge">${team.division}</span>
             </div>
             <div class="form-results-row">${badges}</div>
+            ${tableInfo}
             <div class="form-factor-row">
                 <span class="form-factor-label">Auto-Faktor:</span>
                 <span class="form-factor-value ${fClass(autoFactor)}">${sign(autoFactor)}</span>
                 ${hasOverride ? `<span title="Manuell überschrieben" style="font-size:0.75rem;">✏️</span>` : ''}
             </div>
             <div class="form-override-row">
-                <label class="form-override-label">Override (-2 bis +2):
+                <label class="form-override-label">Override:
                     <input type="number" class="form-override-input" data-team="${team.name}"
                            min="-2" max="2" step="0.1" placeholder="auto"
                            value="${hasOverride ? form.override : ''}">
