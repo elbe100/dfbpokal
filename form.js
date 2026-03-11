@@ -114,6 +114,14 @@ function _namesMatch(a, b) {
            na.includes(nb.slice(0, 6)) || nb.includes(na.slice(0, 6));
 }
 
+function _parseDate(dtStr) {
+    if (!dtStr) return null;
+    // ASP.NET /Date(ms+offset)/ format
+    const msMatch = String(dtStr).match(/\/Date\((-?\d+)/);
+    if (msMatch) return new Date(parseInt(msMatch[1]));
+    return new Date(dtStr);
+}
+
 function _getFinalScore(match) {
     const results = match.MatchResults || [];
     if (!results.length) return null;
@@ -170,6 +178,17 @@ async function loadFormFromAPI(stichtag, onProgress) {
         )
     );
 
+    // Debug: erstes Spiel loggen um Feldnamen/Datumsformat zu sehen
+    const firstMatch = fetches.find(f => f.status === 'fulfilled')?.value?.matches?.[0];
+    if (firstMatch) {
+        console.log('[OpenLigaDB] Beispiel-Match:', JSON.stringify({
+            MatchDateTimeUTC: firstMatch.MatchDateTimeUTC,
+            MatchDateTime: firstMatch.MatchDateTime,
+            MatchIsFinished: firstMatch.MatchIsFinished,
+            keys: Object.keys(firstMatch)
+        }, null, 2));
+    }
+
     const leagueMatches = {};   // { bl1: [...], bl2: [...], bl3: [...] }
     fetches.forEach(f => {
         if (f.status === 'fulfilled') {
@@ -177,7 +196,9 @@ async function loadFormFromAPI(stichtag, onProgress) {
             leagueMatches[league] = matches.filter(m => {
                 const dtStr = m.MatchDateTimeUTC || m.MatchDateTime;
                 if (!dtStr) return false;
-                return new Date(dtStr) <= cutoff;
+                const dt = _parseDate(dtStr);
+                if (!dt || isNaN(dt)) return false;
+                return dt <= cutoff;
             });
         }
     });
@@ -185,7 +206,8 @@ async function loadFormFromAPI(stichtag, onProgress) {
     const allPlayed = Object.values(leagueMatches).flat();
     if (!allPlayed.length) {
         const totalFetched = fetches.filter(f => f.status === 'fulfilled').reduce((s, f) => s + f.value.matches.length, 0);
-        throw new Error(`Keine abgeschlossenen Spiele vor dem Stichtag gefunden. (${totalFetched} Spiele geladen, Stichtag: ${cutoff.toISOString()})`);
+        const sampleDate = firstMatch ? (firstMatch.MatchDateTimeUTC || firstMatch.MatchDateTime) : 'n/a';
+        throw new Error(`Keine Spiele vor dem Stichtag gefunden. (${totalFetched} geladen, Cutoff: ${cutoff.toISOString()}, Beispieldatum: ${sampleDate})`);
     }
 
     // Tabellen berechnen
@@ -203,7 +225,7 @@ async function loadFormFromAPI(stichtag, onProgress) {
         // Suche in allen Ligen nach Spielen dieses Teams
         let teamMatches = allPlayed
             .filter(m => _namesMatch(team.name, m.Team1.TeamName) || _namesMatch(team.name, m.Team2.TeamName))
-            .sort((a, b) => new Date(a.MatchDateTimeUTC) - new Date(b.MatchDateTimeUTC));
+            .sort((a, b) => _parseDate(a.MatchDateTimeUTC || a.MatchDateTime) - _parseDate(b.MatchDateTimeUTC || b.MatchDateTime));
 
         if (!teamMatches.length) return;
         matched++;
