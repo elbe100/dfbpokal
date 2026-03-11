@@ -123,17 +123,17 @@ function _parseDate(dtStr) {
 }
 
 function _getFinalScore(match) {
-    const results = match.MatchResults || [];
+    const results = match.matchResults || [];
     if (!results.length) return null;
-    const final = results.reduce((a, b) => a.ResultOrderID > b.ResultOrderID ? a : b);
-    return { home: final.PointsTeam1, away: final.PointsTeam2 };
+    const final = results.reduce((a, b) => a.resultOrderID > b.resultOrderID ? a : b);
+    return { home: final.pointsTeam1, away: final.pointsTeam2 };
 }
 
 function _resultForTeam(teamName, match) {
     const score = _getFinalScore(match);
     if (!score) return null;
-    const isHome = _namesMatch(teamName, match.Team1.TeamName);
-    const isAway = !isHome && _namesMatch(teamName, match.Team2.TeamName);
+    const isHome = _namesMatch(teamName, match.team1.teamName);
+    const isAway = !isHome && _namesMatch(teamName, match.team2.teamName);
     if (!isHome && !isAway) return null;
     const mine = isHome ? score.home : score.away;
     const opp  = isHome ? score.away : score.home;
@@ -150,7 +150,7 @@ function _computeTable(matches) {
     matches.forEach(m => {
         const score = _getFinalScore(m);
         if (!score) return;
-        const n1 = m.Team1.TeamName, n2 = m.Team2.TeamName;
+        const n1 = m.team1.teamName, n2 = m.team2.teamName;
         if (!t[n1]) t[n1] = { name: n1, pts: 0, gd: 0, played: 0 };
         if (!t[n2]) t[n2] = { name: n2, pts: 0, gd: 0, played: 0 };
         t[n1].played++; t[n2].played++;
@@ -178,23 +178,12 @@ async function loadFormFromAPI(stichtag, onProgress) {
         )
     );
 
-    // Debug: erstes Spiel loggen um Feldnamen/Datumsformat zu sehen
-    const firstMatch = fetches.find(f => f.status === 'fulfilled')?.value?.matches?.[0];
-    if (firstMatch) {
-        console.log('[OpenLigaDB] Beispiel-Match:', JSON.stringify({
-            MatchDateTimeUTC: firstMatch.MatchDateTimeUTC,
-            MatchDateTime: firstMatch.MatchDateTime,
-            MatchIsFinished: firstMatch.MatchIsFinished,
-            keys: Object.keys(firstMatch)
-        }, null, 2));
-    }
-
     const leagueMatches = {};   // { bl1: [...], bl2: [...], bl3: [...] }
     fetches.forEach(f => {
         if (f.status === 'fulfilled') {
             const { league, matches } = f.value;
             leagueMatches[league] = matches.filter(m => {
-                const dtStr = m.MatchDateTimeUTC || m.MatchDateTime;
+                const dtStr = m.matchDateTimeUTC || m.matchDateTime;
                 if (!dtStr) return false;
                 const dt = _parseDate(dtStr);
                 if (!dt || isNaN(dt)) return false;
@@ -206,8 +195,7 @@ async function loadFormFromAPI(stichtag, onProgress) {
     const allPlayed = Object.values(leagueMatches).flat();
     if (!allPlayed.length) {
         const totalFetched = fetches.filter(f => f.status === 'fulfilled').reduce((s, f) => s + f.value.matches.length, 0);
-        const sampleDate = firstMatch ? (firstMatch.MatchDateTimeUTC || firstMatch.MatchDateTime) : 'n/a';
-        throw new Error(`Keine Spiele vor dem Stichtag gefunden. (${totalFetched} geladen, Cutoff: ${cutoff.toISOString()}, Beispieldatum: ${sampleDate})`);
+        throw new Error(`Keine Spiele vor dem Stichtag gefunden. (${totalFetched} Spiele geladen)`);
     }
 
     // Tabellen berechnen
@@ -224,8 +212,8 @@ async function loadFormFromAPI(stichtag, onProgress) {
     allTeams.forEach(team => {
         // Suche in allen Ligen nach Spielen dieses Teams
         let teamMatches = allPlayed
-            .filter(m => _namesMatch(team.name, m.Team1.TeamName) || _namesMatch(team.name, m.Team2.TeamName))
-            .sort((a, b) => _parseDate(a.MatchDateTimeUTC || a.MatchDateTime) - _parseDate(b.MatchDateTimeUTC || b.MatchDateTime));
+            .filter(m => _namesMatch(team.name, m.team1.teamName) || _namesMatch(team.name, m.team2.teamName))
+            .sort((a, b) => _parseDate(a.matchDateTimeUTC || a.matchDateTime) - _parseDate(b.matchDateTimeUTC || b.matchDateTime));
 
         if (!teamMatches.length) return;
         matched++;
