@@ -738,3 +738,40 @@ h3, h4 {
         grid-template-columns: 1fr;
     }
 }
+
+/* Rangliste Table */
+.rangliste-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    font-size: 0.9rem;
+}
+
+.rangliste-table thead tr {
+    background: linear-gradient(135deg, #003da5 0%, #0052cc 100%);
+    color: white;
+}
+
+.rangliste-table th {
+    padding: 0.75rem 0.6rem;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rangliste-table td {
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+
+.rangliste-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.rangliste-table tbody tr:hover {
+    background: #f5f8ff;
+}

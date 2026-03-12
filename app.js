@@ -32,6 +32,7 @@ function setupNavigationListeners() {
             if (sectionId === 'stats') renderStatsSection();
             if (sectionId === 'sieger') renderSiegerSection();
             if (sectionId === 'form') renderFormSection();
+            if (sectionId === 'rangliste') renderRanglisteSection();
             if (sectionId === 'settings') renderSettingsSection();
         });
     });
@@ -465,6 +466,62 @@ function rerenderFormCard(teamName, teams) {
     // Statistiken aktualisieren
     const statsPanel = document.getElementById('form-stats-panel');
     if (statsPanel) statsPanel.innerHTML = renderFormStats(getFormStatsByDivision(teams));
+}
+
+// --- Form-Rangliste ---
+
+function renderRanglisteSection() {
+    const container = document.getElementById('rangliste-container');
+    const allTeams = getAllTeams();
+    const teams = [...allTeams.pro, ...allTeams.amateur];
+
+    const rows = teams.map(team => {
+        const form = getTeamForm(team.name);
+        const formFactor = getEffectiveFormFactor(team.name);
+        const tableFactor = getEffectiveTableFactor(team.name, team.division);
+        const totalBonus = parseFloat((formFactor + tableFactor).toFixed(1));
+        const displayPos = form.tablePosOverride != null ? form.tablePosOverride : (form.tablePos || null);
+        return { team, form, formFactor, tableFactor, totalBonus, displayPos };
+    }).sort((a, b) => b.totalBonus - a.totalBonus);
+
+    const sign = v => (v > 0 ? '+' : '') + v.toFixed(1);
+    const fClass = v => v > 0.3 ? 'form-factor-positive' : v < -0.3 ? 'form-factor-negative' : 'form-factor-neutral';
+
+    const tableRows = rows.map((r, i) => {
+        const badges = r.form.results.map(res =>
+            `<span class="form-result-badge form-result-${res.toLowerCase()}">${res}</span>`
+        ).join('');
+        return `
+            <tr>
+                <td style="text-align:center; font-weight:bold; color:#888;">${i + 1}</td>
+                <td><strong>${r.team.name}</strong></td>
+                <td><span class="form-division-badge">${r.team.division}</span></td>
+                <td style="text-align:center;">${r.displayPos != null ? r.displayPos : '–'}</td>
+                <td style="white-space:nowrap;">${badges}</td>
+                <td style="text-align:center;" class="${fClass(r.formFactor)}">${sign(r.formFactor)}</td>
+                <td style="text-align:center;" class="${fClass(r.tableFactor)}">${sign(r.tableFactor)}</td>
+                <td style="text-align:center;"><strong class="${fClass(r.totalBonus)}">${sign(r.totalBonus)}</strong></td>
+            </tr>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <table class="rangliste-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>Liga</th>
+                    <th>Platz</th>
+                    <th>Letzte 5</th>
+                    <th>Form</th>
+                    <th>Tabelle</th>
+                    <th>Gesamt ▼</th>
+                </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+        </table>
+    `;
 }
 
 // --- Würfel-Einstellungen ---
