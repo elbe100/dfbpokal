@@ -7,7 +7,7 @@ class DiceRoller {
 
     roll(team) {
         const settings = getDiceSettings();
-        const s = settings[team.division] || { min: 0, max: team.diceMax };
+        const s = settings[team.division] || { min: 0, max: 1 };
         const min = Math.min(s.min, s.max);
         const max = Math.max(s.min, s.max);
         const raw = min + Math.floor(Math.random() * (max - min + 1));
