@@ -489,18 +489,18 @@ function renderRanglisteSection() {
 
     const tableRows = rows.map((r, i) => {
         const badges = r.form.results.map(res =>
-            `<span class="form-result-badge form-result-${res.toLowerCase()}">${res}</span>`
+            `<span class="form-result-badge form-result-${res.toLowerCase()} rl-badge">${res}</span>`
         ).join('');
         return `
             <tr>
-                <td style="text-align:center; font-weight:bold; color:#888;">${i + 1}</td>
-                <td><strong>${r.team.name}</strong></td>
+                <td class="rl-rank">${i + 1}</td>
+                <td class="rl-name">${r.team.name}</td>
                 <td><span class="form-division-badge">${r.team.division}</span></td>
-                <td style="text-align:center;">${r.displayPos != null ? r.displayPos : '–'}</td>
-                <td style="white-space:nowrap;">${badges}</td>
-                <td style="text-align:center;" class="${fClass(r.formFactor)}">${sign(r.formFactor)}</td>
-                <td style="text-align:center;" class="${fClass(r.tableFactor)}">${sign(r.tableFactor)}</td>
-                <td style="text-align:center;"><strong class="${fClass(r.totalBonus)}">${sign(r.totalBonus)}</strong></td>
+                <td class="rl-center">${r.displayPos != null ? r.displayPos : '–'}</td>
+                <td><div class="rl-badges">${badges}</div></td>
+                <td class="rl-center ${fClass(r.formFactor)}">${sign(r.formFactor)}</td>
+                <td class="rl-center ${fClass(r.tableFactor)}">${sign(r.tableFactor)}</td>
+                <td class="rl-center"><strong class="${fClass(r.totalBonus)}">${sign(r.totalBonus)}</strong></td>
             </tr>
         `;
     }).join('');

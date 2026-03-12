@@ -747,7 +747,7 @@ h3, h4 {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    font-size: 0.9rem;
+    font-size: 0.82rem;
 }
 
 .rangliste-table thead tr {
@@ -756,14 +756,14 @@ h3, h4 {
 }
 
 .rangliste-table th {
-    padding: 0.75rem 0.6rem;
+    padding: 0.5rem 0.5rem;
     text-align: left;
     font-weight: 600;
     white-space: nowrap;
 }
 
 .rangliste-table td {
-    padding: 0.5rem 0.6rem;
+    padding: 0.25rem 0.5rem;
     border-bottom: 1px solid #f0f0f0;
     vertical-align: middle;
 }
@@ -774,4 +774,39 @@ h3, h4 {
 
 .rangliste-table tbody tr:hover {
     background: #f5f8ff;
+}
+
+.rl-rank {
+    text-align: center;
+    font-weight: bold;
+    color: #888;
+    width: 2rem;
+}
+
+.rl-center {
+    text-align: center;
+}
+
+.rl-name {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rl-badges {
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    align-items: center;
+}
+
+.rl-badge {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 0.65rem !important;
+    cursor: default !important;
+}
+
+.rl-badge:hover {
+    transform: none !important;
+    opacity: 1 !important;
 }
