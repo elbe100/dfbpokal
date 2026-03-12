@@ -29,7 +29,6 @@ function setupNavigationListeners() {
             
             // Render Inhalte
             if (sectionId === 'matches') renderMatchesSection();
-            if (sectionId === 'results') renderResultsSection();
             if (sectionId === 'stats') renderStatsSection();
             if (sectionId === 'sieger') renderSiegerSection();
             if (sectionId === 'form') renderFormSection();
@@ -203,60 +202,6 @@ function addNextRoundButton() {
     });
 }
 
-function renderResultsSection() {
-    const container = document.getElementById('results-container');
-
-    if (tournament.results.length === 0) {
-        container.innerHTML = '<p>Noch keine Spiele gespielt.</p>';
-        return;
-    }
-
-    const resultsByRound = {};
-    tournament.results.forEach(result => {
-        if (!resultsByRound[result.round]) {
-            resultsByRound[result.round] = [];
-        }
-        resultsByRound[result.round].push(result);
-    });
-
-    let html = '';
-    Object.keys(resultsByRound).sort().forEach(round => {
-        html += `<h3>Runde ${round}</h3>`;
-        html += resultsByRound[round]
-            .map(result => renderResultCard(result))
-            .join('');
-    });
-
-    container.innerHTML = html;
-}
-
-function renderResultCard(result) {
-    const homeScore = result.result.homeTotal || result.diceResult.home;
-    const awayScore = result.result.awayTotal || result.diceResult.away;
-    const winner = result.winner.name;
-    
-    let extra = '';
-    if (result.result.extraTime) {
-        extra += `<div class="result-details">⏱️ Verlängerung</div>`;
-    }
-    if (result.result.penalties) {
-        extra += `<div class="result-details">🥅 Elfmeterschießen: ${result.result.homeScore}:${result.result.awayScore}</div>`;
-    }
-
-    return `
-        <div class="result-card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                <span><strong>${result.home.name}</strong><br><small>${result.home.division}</small></span>
-                <span style="text-align: center;">
-                    <div class="result-score">${homeScore}:${awayScore}</div>
-                </span>
-                <span style="text-align: right;"><strong>${result.away.name}</strong><br><small>${result.away.division}</small></span>
-            </div>
-            <div class="result-winner">🏆 ${winner}</div>
-            ${extra}
-        </div>
-    `;
-}
 
 function renderStatsSection() {
     const stats = tournament.getStatistics();
