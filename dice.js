@@ -6,10 +6,14 @@ class DiceRoller {
     }
 
     roll(team) {
-        // Würfle basierend auf der Division des Teams
-        const max = team.diceMax;
-        const result = Math.floor(Math.random() * (max + 1)); // 0 bis max
-        return result;
+        const settings = getDiceSettings();
+        const s = settings[team.division] || { min: 0, max: 1 };
+        const min = Math.min(s.min, s.max);
+        const max = Math.max(s.min, s.max);
+        const raw = min + Math.floor(Math.random() * (max - min + 1));
+        const formBonus = getEffectiveFormFactor(team.name);
+        const tableBonus = getEffectiveTableFactor(team.name, team.division);
+        return Math.max(min, Math.min(max, Math.round(raw + formBonus + tableBonus)));
     }
 
     rollForMatch(homeTeam, awayTeam) {

@@ -15,8 +15,11 @@
     <nav class="nav-tabs">
         <button class="nav-btn active" data-section="setup">Setup</button>
         <button class="nav-btn" data-section="matches">Spiele</button>
-        <button class="nav-btn" data-section="results">Ergebnisse</button>
         <button class="nav-btn" data-section="stats">Statistik</button>
+        <button class="nav-btn" data-section="sieger">🏆 Sieger</button>
+        <button class="nav-btn" data-section="form">📊 Form</button>
+        <button class="nav-btn" data-section="rangliste">📋 Rangliste</button>
+        <button class="nav-btn" data-section="settings">⚙️ Einstellungen</button>
     </nav>
 
     <main id="main-content">
@@ -35,7 +38,7 @@
                         <div id="amateur-teams" class="team-list"></div>
                     </div>
                 </div>
-                <button id="start-tournament" class="btn-primary">Turnier starten</button>
+                <button id="start-tournament" class="btn-primary" style="display:block; margin: 2rem auto 0;">Turnier starten</button>
             </div>
         </section>
 
@@ -46,19 +49,44 @@
             <div id="matches-container" class="matches-container"></div>
         </section>
 
-        <!-- Results Section -->
-        <section id="results" class="section">
-            <h2>Ergebnisse</h2>
-            <div id="results-container" class="results-container"></div>
-        </section>
-
-        <!-- Stats Section -->
+<!-- Stats Section -->
         <section id="stats" class="section">
             <h2>Statistik</h2>
             <div id="stats-container" class="stats-container"></div>
         </section>
+
+        <!-- Form Section -->
+        <section id="form" class="section">
+            <h2>📊 Team-Form</h2>
+            <p style="color:#666; margin-bottom:1.5rem;">Letzte 5 Spiele pro Team (klicken zum Ändern: W→U→N). Der Formfaktor (−2 bis +2) wird als kleiner Bonus auf jeden Würfelwurf addiert.</p>
+            <div id="form-container"></div>
+        </section>
+
+        <!-- Rangliste Section -->
+        <section id="rangliste" class="section">
+            <h2>📋 Form-Rangliste</h2>
+            <p style="color:#666; margin-bottom:1.5rem;">Alle Teams sortiert nach Gesamt-Bonus (Form + Tabelle), höchster Bonus zuerst.</p>
+            <div id="rangliste-container"></div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="section">
+            <h2>⚙️ Würfel-Einstellungen</h2>
+            <p style="color: #666; margin-bottom: 1.5rem;">Lege für jede Liga den Würfelbereich (Min–Max) fest. Änderungen gelten ab dem nächsten Spiel.</p>
+            <div id="settings-container"></div>
+        </section>
+
+        <!-- Sieger Section -->
+        <section id="sieger" class="section">
+            <h2>🏆 Sieger</h2>
+            <p style="color: #666; margin-bottom: 1.5rem;">Dauerhaft gespeicherte Turniersieger</p>
+            <div id="sieger-container" class="results-container"></div>
+            <button id="clear-sieger-btn" class="btn-small" style="margin-top: 2rem; background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Alle Einträge löschen</button>
+        </section>
     </main>
 
+    <script src="form.js"></script>
+    <script src="settings.js"></script>
     <script src="teams.js"></script>
     <script src="dice.js"></script>
     <script src="tournament.js"></script>

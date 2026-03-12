@@ -25,22 +25,20 @@ class Tournament {
     }
 
     createRound1Matches() {
-        // Runde 1: Amateure spielen gegen Profis
-        // Amateure haben Heimrecht
-        const proTeams = [...this.teams.pro];
-        const amateurTeams = [...this.teams.amateur];
+        // Runde 1: Amateure spielen gegen Profis (zufällige Auslosung)
+        // Constraint: kein BL gegen BL, kein Amateur gegen Amateur
+        // → wird durch getrennte Töpfe garantiert
+        const proTeams = this.shuffleArray([...this.teams.pro]);
+        const amateurTeams = this.shuffleArray([...this.teams.amateur]);
 
         this.matches = [];
-        
-        for (let i = 0; i < 32; i++) {
-            const homeAmatuer = amateurTeams[i];
-            const awayPro = proTeams[i];
-            
+
+        for (let i = 0; i < proTeams.length; i++) {
             this.matches.push({
                 id: i,
                 round: 1,
-                home: homeAmatuer,
-                away: awayPro,
+                home: amateurTeams[i],   // Amateur hat Heimrecht
+                away: proTeams[i],
                 homeType: 'amateur',
                 awayType: 'pro',
                 result: null,
